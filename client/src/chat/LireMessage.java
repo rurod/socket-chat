@@ -11,10 +11,12 @@ import java.time.LocalDateTime;
 class LireMessage implements Runnable {
 
     private DataInputStream dis = null;
-    
+    private boolean dialog = false;
+
     public LireMessage(Socket s) {
         try {
             this.dis = new DataInputStream(s.getInputStream());
+            this.dialog = true;
         }
         catch (IOException e) {
             System.out.println("[ERROR] - An error occured while getting the input stream");
@@ -70,8 +72,7 @@ class LireMessage implements Runnable {
             }
         }
         catch (IOException e) {
-            System.out.println("[ERROR] - An error occured while receiving a message");
-            System.out.println("[ERROR] - " + e.getMessage());
+            System.out.println("Chat exited.");
         }
         finally {
             this.closeConnection();

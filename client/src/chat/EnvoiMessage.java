@@ -9,12 +9,14 @@ class EnvoiMessage implements Runnable {
 
     private DataOutputStream dos = null;
     private Scanner sc = null;
-    private String username = null;    
+    private String username = null;
+    private boolean dialog = false;    
 
     public EnvoiMessage(Socket s) {
         try {
             this.dos = new DataOutputStream(s.getOutputStream());
             this.sc = new Scanner(System.in);
+            this.dialog = true;
         }
         catch (IOException e) {
             System.out.println("[ERROR] - An error occured while getting the output stream");
@@ -26,14 +28,19 @@ class EnvoiMessage implements Runnable {
         this.username = username;
     }
 
-    public void sendMessage(String msg) {
-        try {
-            this.dos.writeUTF(msg);
-            this.dos.flush();
+    public void sendMessage(String msg) throws IOException {
+        this.dos.writeUTF(msg);
+        this.dos.flush();
+    }
+
+    public void filterMessage(String msg) throws IOException {
+        if (msg.equals("exit")) {
+            this.sendMessage("order#exit");
+            this.dialog = false;
+            this.closeConnection();
         }
-        catch (IOException e) {
-            System.out.println("[ERROR] - An error occured while sending the message");
-            System.out.println("[ERROR] - " + e.getMessage());
+        else {
+            this.sendMessage(msg);
         }
     }
 
@@ -51,18 +58,19 @@ class EnvoiMessage implements Runnable {
 
     public void run() {
         String  msg = null;
-        this.sendMessage("order#username#" + this.username);
-
-        while (true) {
-            msg = this.sc.nextLine();
-            System.out.print("# "); 
-            if (msg.equals("exit")) {
-                this.sendMessage("order#stop");
-                this.closeConnection();
-                break;
+        try {
+            if (this.dialog)
+                this.sendMessage("order#username#" + this.username);
+            while (this.dialog) {
+                msg = this.sc.nextLine();
+                System.out.print("# ");
+                this.filterMessage(msg); 
             }
-            this.sendMessage(msg);
         } 
+        catch (IOException e) {
+            System.out.println("[ERROR] - An error occured while sending the message");
+            System.out.println("[ERROR] - " + e.getMessage());
+        }
     }
 
 }

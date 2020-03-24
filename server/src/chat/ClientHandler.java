@@ -14,17 +14,26 @@ class ClientHandler implements Runnable {
     private DataOutputStream dos = null;
     private String username = null;
     private Vector<ClientHandler> clients;
-    private boolean dialog = true;
+    private boolean dialog = false;
 
     public ClientHandler(Socket s, Vector<ClientHandler> clients) {
         this.s = s;
         this.clients = clients;
+    }
+
+    public String getUsername() {
+        return this.username;
+    }
+
+    public void setUsername(String u) {
+        this.username = u;
     }
     
     public boolean getStreams() {
         try {
             this.dis = new DataInputStream(this.s.getInputStream());
             this.dos = new DataOutputStream(this.s.getOutputStream());
+            this.dialog = true;
             return true;
         }
         catch (IOException e) {
@@ -33,12 +42,22 @@ class ClientHandler implements Runnable {
             return false;
         }
     }
-    public String getUsername() {
-        return this.username;
-    }
 
-    public void setUsername(String u) {
-        this.username = u;
+    public void welcomeMessage() {
+        try {
+            this.dos.writeUTF("notify# Successfully connected to the server !");
+            this.dos.writeUTF("notify#*** Welcome to the chat ***");
+            this.dos.writeUTF("notify#*** " + this.clients.size() + " users are connected ***");
+            this.dos.flush();
+        }
+        catch (IOException e) {
+            System.out.println("[ERROR] - An error occure while sending the welcome message");
+            System.out.println("[ERROR] - " + e.getMessage());
+        }
+    }
+   
+    public void stopDialog() {
+        this.dialog = false;
     }
 
     public void pushMessage(String msg) {
@@ -51,10 +70,12 @@ class ClientHandler implements Runnable {
             System.out.println("[ERROR] - " + e.getMessage());
         }
     }
-    
-    public void stopDialog() {
-        this.dialog = false;
-        this.closeConnection();
+
+    public void broadcast(String msg) {
+        for (ClientHandler ch: this.clients) {
+            if (!ch.getUsername().equals(this.username))
+                ch.pushMessage(msg + "#" + this.username + "#broadcast");
+        }
     }
 
     public void sendMessageTo(String msg, String dest) {
@@ -63,13 +84,6 @@ class ClientHandler implements Runnable {
                 ch.pushMessage(msg + "#" + this.username + "#private");
                 break;
             }
-        }
-    }
-
-    public void broadcast(String msg) {
-        for (ClientHandler ch: this.clients) {
-            if (!ch.getUsername().equals(this.username))
-                ch.pushMessage(msg + "#" + this.username + "#broadcast");
         }
     }
 
@@ -82,8 +96,8 @@ class ClientHandler implements Runnable {
             if (token.equals("order")) {
                 if (st.hasMoreTokens()) {
                     token = st.nextToken();
-                    if (token.equals("stop")) {
-                        this.stopDialog();
+                    if (token.equals("exit")) {
+                        this.dialog = false;
                     }
                     else if (token.equals("username")) {
                         if (st.hasMoreTokens()) {
@@ -106,21 +120,9 @@ class ClientHandler implements Runnable {
         }
     }
 
-    public void welcomeMessage() {
-        try {
-            this.dos.writeUTF("notify# Successfully connected to the server !");
-            this.dos.writeUTF("notify#*** Welcome to the chat ***");
-            this.dos.writeUTF("notify#*** " + this.clients.size() + " users are connected ***");
-            this.dos.flush();
-        }
-        catch (IOException e) {
-            System.out.println("[ERROR] - An error occure while sending the welcome message");
-            System.out.println("[ERROR] - " + e.getMessage());
-        }
-    }   
- 
     public void closeConnection() {
         System.out.println("[INFO] - Closing connection of " + username);
+        this.broadcast("notify#" + this.username + " left the chat");
         try {
             if (this.dos != null) {
                     this.dos.close();

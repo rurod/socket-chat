@@ -24,13 +24,13 @@ class ChatService {
 		
 		try {
 			ss = new ServerSocket(this.port);
-			System.out.println("[LOG] - Server started - Waiting for connections");
+			System.out.println("[INFO] - Server started - Waiting for connections");
 			while (true) {
 				ClientHandler ch = new ClientHandler(ss.accept(), this.clients);
                 this.clients.add(ch);
 				Thread t = new Thread(ch);
 				t.start();
-				System.out.println("[LOG] - Client connected - Thread created");
+				System.out.println("[INFO] - Client connected - Thread created");
 			}
 		}
 		catch (IOException e) {

@@ -56,10 +56,6 @@ class ClientHandler implements Runnable {
         }
     }
    
-    public void stopDialog() {
-        this.dialog = false;
-    }
-
     public void pushMessage(String msg) {
         try {
             this.dos.writeUTF(msg);
